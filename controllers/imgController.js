@@ -3,12 +3,30 @@
 const firebase = require("../db");
 const Img = require("../models/img");
 const firestore = firebase.firestore();
+import axios from "axios";
+
+async function shortenLink(link) {
+
+    try {
+        const response = await axios.get(`https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(link)}`);
+        const { ok, result } = response.data;
+        if (ok) {
+            return result.full_short_link;
+        } else {
+            throw new Error('Failed to shorten link');
+        }
+    } catch (error) {
+        throw new Error('Failed to shorten link');
+    }
+}
 
 
 const addImg = async (req, res, next) => {
     try {
         const data = req.body;
         await firestore.collection('imgs').doc().set(data);
+        const shortenedLink = await shortenLink(data.src);
+        data.shortenedLink = shortenedLink;
         res.send('Record saved successfuly');
     } catch (error) {
         res.status(400).send(error.message);
